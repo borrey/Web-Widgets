@@ -30,20 +30,20 @@
       <h1>Test Canvas Draw</h1>
     </header>
     <article id='container' ></article>
-    <a id='clear'>clear</a>
-    <a id='action'>runActionStack</a>
+    <a id='undo'>undo</a>
+    <a id='redo'>redo</a>
     <footer></footer>
   </body>
   <script type="text/javascript">
     window.onload=function(){
       var container = document.getElementById('container'),
-      clear = document.getElementById('clear'),
-      action = document.getElementById('action');
+      undo = document.getElementById('undo'),
+      redo = document.getElementById('redo');
       if( 'util' in window ){
         var paint = window.util.images.createPaint( null, 200, 300 );
         container.appendChild( paint );
-        util.dom.addEvent(clear,'click',function(){ paint.clear()}, true);
-        util.dom.addEvent(action,'click',function(){ paint.runActionStack()}, true);
+        util.dom.addEvent(undo,'click',function(){ paint.undo()}, true);
+        util.dom.addEvent(redo,'click',function(){ paint.redo()}, true);
       }
     }
   </script>

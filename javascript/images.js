@@ -144,11 +144,21 @@
 	    this.restore_on_move = true;
 	    this.started = false;
 	    this.started_coordinates = { x : 0, y :0 };
+	    this.type = 'circle';
 	},
 	update : function( new_coordinates ){
+	    var a = Math.abs( this.started_coordinates.x - new_coordinates.x ),
+	    b = Math.abs( this.started_coordinates.y - new_coordinates.y ),
+	    c_square = a*a+b*b,
+	    radius = Math.round(Math.sqrt( c_square )),
+	    startAngle = 0, endAngle = 2*Math.PI, counterClockwise = false
+	    ;
 	    this.tmp_context.beginPath();
-	    this.tmp_context.moveTo( this.started_coordinates.x, 
-				     this.started_coordinates.y );
+	    this.tmp_context.arc( this.started_coordinates.x, 
+				  this.started_coordinates.y,
+				  radius,
+				  startAngle, endAngle, counterClockwise
+				);
 		//this.tmp_context.lineTo( new_coordinates.x, new_coordinates.y );
 	    this.tmp_context.stroke();
 	    this.tmp_context.closePath();
@@ -160,18 +170,17 @@
 	canvas = paint.appendChild( document.createElement('canvas') ),
 	tmp_canvas = paint.appendChild( document.createElement('canvas') ),
 	select = paint.appendChild( document.createElement('select') ),
-	action_stack = [],
+	undo_stack = [],
+	redo_stack = [],
 	tools = {
-	    pen : new Pen( canvas, tmp_canvas, action_stack ),
-	    rectangle : new Rectangle( canvas, tmp_canvas, action_stack ),
-	    line : new Line( canvas, tmp_canvas, action_stack )
+	    pen : new Pen( canvas, tmp_canvas, undo_stack ),
+	    rectangle : new Rectangle( canvas, tmp_canvas, undo_stack ),
+	    circle : new Circle( canvas, tmp_canvas, undo_stack ),
+	    line : new Line( canvas, tmp_canvas, undo_stack )
 	},
 	current_tool = 'pen',
 	tool_fn = function(ev){
 	    tools[current_tool][ev.type](ev);
-	    if(ev.type==='mouseup'){
-		console.log('up:',action_stack);
-	    }
 	}
 	;
 
@@ -180,42 +189,49 @@
 	tmp_canvas.style.top = canvas.offsetTop+'px';
 
 	addOption( select, 'pen' );
-	addOption( select, 'rectangle' );
 	addOption( select, 'line' );
+	addOption( select, 'rectangle' );
+	addOption( select, 'circle' );
 	select.addEventListener('change', function(event){
 	    if (tools[this.value]) {
 		current_tool = this.value;
 	    }	    
 	}, false);
 	runTool = function( action ){
-	    console.log(action,tools);
 	    var idx = 0, tool = tools[action.tool];
 	    tool.start( action.start );
-	    console.log('start',action.start);
 	    if( action.update ){
 		for( idx = 0; idx < action.update.length; idx++){
-		    console.log('update',action.update[idx]);
 		    tool.update( action.update[idx] );
 		}
 	    }
-	    console.log('finish',action.finish);
 	    tool.finish( action.finish );
 	    return action;
 	};
 	paint.runActionStack = function(){
-	    var idx = 0, length = action_stack.length, tmp_action_stack = action_stack.slice();
-	    //while( action_stack.length ){
-	//	tmp_action_stack.push(action_stack.shift());
-	  //  }
-	    action_stack.splice(0, length );
+	    var idx = 0, length = undo_stack.length, tmp_action_stack = undo_stack.slice();
+	    undo_stack.splice(0, length );
 	    while( tmp_action_stack.length ){
 		runTool(tmp_action_stack.shift());
+	    }
+	};
+	paint.undo = function(){
+	    if( undo_stack.length ){
+		redo_stack.push(undo_stack.pop());
+		paint.clear();
+		paint.runActionStack();
+	    }
+	};
+	paint.redo = function(){
+	    if( redo_stack.length ){
+		undo_stack.push( redo_stack.pop() );
+		paint.clear();
+		paint.runActionStack();
 	    }
 	};
 	paint.clear = function(){
 	    var context = canvas.getContext('2d');
 	    context.clearRect(0, 0, canvas.width, canvas.height);
-	    console.log('clear');
 	};
 	util.style.addClassToElement( paint, 'paint' );
 	// Attach the mousedown, mousemove and mouseup event listeners.
