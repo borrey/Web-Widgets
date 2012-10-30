@@ -1,0 +1,50 @@
+<!-- 
+
+        \file draw_canvas.html
+  
+        \author borrey
+ 
+        Date Created: 2012-10-26T15:03:22-0600\n
+        Date Modified:
+ 
+        Copyright  All Rights Reserved  
+-->
+
+<html>
+  <head>
+    <meta http-equiv='content-type' content='text/html;charset=utf-8' />
+    <title>Test Canvas Draw</title>
+    <script type="text/javascript" src="../javascript/util.js"></script>
+    <script type="text/javascript" src="../javascript/images.js"></script>
+    <style type='text/css' media='screen'>
+      div.paint {
+        position: relative;
+      }
+      div.paint > canvas {
+        border: 1px solid #000;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Test Canvas Draw</h1>
+    </header>
+    <article id='container' ></article>
+    <a id='clear'>clear</a>
+    <a id='action'>runActionStack</a>
+    <footer></footer>
+  </body>
+  <script type="text/javascript">
+    window.onload=function(){
+      var container = document.getElementById('container'),
+      clear = document.getElementById('clear'),
+      action = document.getElementById('action');
+      if( 'util' in window ){
+        var paint = window.util.images.createPaint( null, 200, 300 );
+        container.appendChild( paint );
+        util.dom.addEvent(clear,'click',function(){ paint.clear()}, true);
+        util.dom.addEvent(action,'click',function(){ paint.runActionStack()}, true);
+      }
+    }
+  </script>
+</html>
