@@ -86,6 +86,13 @@
 	    for( idx in this.map ){
 		callback(this.map[idx], args, idx );
 	    }
+	},
+	getEntries : function(){
+	    var idx, entries = [];
+	    for( idx in this.map ){
+		entries.push( this.map[idx] );
+	    }
+	    return entries;
 	}
     });
     Events = Class.extend({

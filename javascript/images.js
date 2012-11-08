@@ -166,7 +166,9 @@
     }),
     createPaint = function( base_image, width, height ){
 	var paint = document.createElement('div'),
-	
+	//ctx.drawImage(base_image, destination_x, destination_y );
+	//ctx.drawImage(base_image, destination_x, destination_y,  destination_width, destination_height );
+	//ctx.drawImage(base_image, source_x, source_y, source_width, source_height, destination_x, destination_y, destination_width, destination_height );
 	canvas = paint.appendChild( document.createElement('canvas') ),
 	tmp_canvas = paint.appendChild( document.createElement('canvas') ),
 	select = paint.appendChild( document.createElement('select') ),
