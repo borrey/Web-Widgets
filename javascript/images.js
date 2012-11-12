@@ -1,5 +1,9 @@
 (function images( window, document, util ){
-    
+    /*
+      Adds two Widgets:
+      createPaint: ( creates a drawing tool on canvas )
+      createImageCanvas: ( updates canvas based on image src )
+     */
     var getEventCoordinates = function( event ){
 	return {
 	    x : ( event.layerX || event.layerX === 0 ) ? 
@@ -243,9 +247,30 @@
 	
 	return paint;
     }
-    if(util && !('images' in util) ){
-	util.images = {
-	    createPaint : createPaint
-	}
+    if(util && !('createPaint' in util) ){
+	util.createPaint = createPaint;
+    }
+    if(utils && !('createImageCanvas' in utils ) ){
+	utils.createImageCanvas = function( mirror, src ){
+	    var canvas = document.createElement('canvas');
+	    canvas.tmp_img = new Image();
+	    canvas.ctx = canvas.getContext("2d");
+	    canvas.mirror_x = mirror || false;
+	    canvas.setImage = function( src ){
+		canvas.tmp_img.src = src;
+	    };
+	    canvas.tmp_img.onload = function(){
+		canvas.width = canvas.tmp_img.width;
+		canvas.height = canvas.tmp_img.height;
+		if(canvas.mirror_x){
+		    //canvas.mirror_x = false;
+		    canvas.ctx.scale(-1, 1);
+		    canvas.ctx.translate(-canvas.tmp_img.width, 0);
+		}		    
+		canvas.ctx.drawImage( canvas.tmp_img, 0, 0, canvas.tmp_img.width, canvas.tmp_img.height, 0, 0, canvas.tmp_img.width, canvas.tmp_img.height  );
+	    };
+	    if(src){ canvas.setImage(src); }
+	    return canvas;
+	};
     }
 })( window, document, window.util );

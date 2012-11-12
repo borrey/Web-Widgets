@@ -14,23 +14,40 @@
   <head>
     <meta http-equiv='content-type' content='text/html;charset=utf-8' />
     <title>User Bubbles</title>
-    <script src="http://d3js.org/d3.v2.min.js"></script>
+    <script src="../javascript/lib/d3.v2.js"></script>
     <script type="text/javascript" src="../javascript/util.js"></script>
     <script type="text/javascript" src="../javascript/user_bubble.js"></script>
     <style type='text/css' media='screen'>
-      .user {
+      .user_bubble {
+        position : relative;
+      }
+      .user_bubble .tools {
+        position : absolute;
+        width : 50%;
+        height : 50%;
+        right : 0px;
+        border : solid 1px;
+      }
+      .user_bubble .user {
         cursor: pointer;
       }
-      .user .info{
+      .user_bubble .user .info{
         stroke : black;
         stroke-width : 2px;
         fill : white;
       }
+      .user_bubble .user .rating{
+        fill : none;
+        stroke : steelblue;
+        stroke-width : 5px;
+      } 
+      .user_bubble .hidden {
+        display : none;
+      }
     </style>
   </head>
   <body>
-    <header>
-      <h1>User Bubbles</h1>
+    <header>      <h1>User Bubbles</h1>
     </header>
     <article id='container' ></article>
     <footer></footer>
@@ -40,18 +57,19 @@
       var container = document.getElementById('container')
       ;
       if( 'util' in window ){
-        var monitor = window.util.monitor_users.createUserMonitor( ),
+        var monitor = window.util.createUserMonitor( ),
         data = {
           35 : { id : 35, rating : 45 },
           45 : { id : 45, rating : 35 }
         };
         container.appendChild( monitor );
-        monitor.updateData( { 1 : { id : 1, rating : 55 }, 2 : { id : 2, rating : 70 }, 3 : { id : 3, rating : 15 },  4 : { id : 4, rating : 15 }, 6 : { id : 6, rating : 15 }, 35 : { id : 35, rating : 45 }, 45 : { id : 45, rating : 35 }, 55 : { id : 55, rating : 15 } }, {} );
+        monitor.updateData( { 1 : { id : 1, rating : 55 }, 2 : { id : 2, rating : 70 }, 3 : { id : 3, rating : 25 },  4 : { id : 4, rating : 75 }, 6 : { id : 6, rating : 20 }, 35 : { id : 35, rating : 45 }, 45 : { id : 45, rating : 35 }, 55 : { id : 55, rating : 15 } }, {} );
+    //monitor.updateData( { 35 : { id : 35, rating : 45 }, 5 : { id : 55, rating : 15 } }, {} );
     setTimeout( function(){ 
       monitor.updateData( { 5 : { id: 5, rating : 90 }, 35 : { rating : 65 } }, { }); 
     }, 1000 );
     setTimeout( function(){ 
-      monitor.updateData( { 35 : { rating : 95 }, 5 : { rating : 5} }, { 45 : { } }); 
+      monitor.updateData( { 35 : { rating : 95 }, 5 : { rating : 5} }, {}); 
     }, 2000 );
         //util.dom.addEvent(undo,'click',function(){ paint.undo()}, true);
         //util.dom.addEvent(redo,'click',function(){ paint.redo()}, true);
