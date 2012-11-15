@@ -250,8 +250,8 @@
     if(util && !('createPaint' in util) ){
 	util.createPaint = createPaint;
     }
-    if(utils && !('createImageCanvas' in utils ) ){
-	utils.createImageCanvas = function( mirror, src ){
+    if(util && !('createImageCanvas' in util ) ){
+	util.createImageCanvas = function( mirror, src ){
 	    var canvas = document.createElement('canvas');
 	    canvas.tmp_img = new Image();
 	    canvas.ctx = canvas.getContext("2d");

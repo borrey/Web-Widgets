@@ -1,4 +1,4 @@
-(function user_bubble( window, document, d3, util ){
+(function bubble( window, document, d3, util ){
     var 
     rating_max = 100,
     radius = 10,
@@ -27,39 +27,39 @@
 	init : function(){
 	    this.container = document.createElement('div');
 	    this.svg = d3.select( this.container ).append('svg');
-	    this.users = new util.objs.CountMap();
+	    this.bubbles = new util.objs.CountMap();
 	    this.listeners = new util.objs.CountMap();
 	    this.force = true;
 	    this.svg.style('width','100%');
 	    this.svg.style('height','100%');
-	    util.style.addClassToElement(this.container,'user_bubble');
+	    util.style.addClassToElement(this.container,'bubbles');
 	},
-	addUpdateUsers : function( users ){
-	    var idx, user;
-	    for( idx in users ){
-		if( this.users.contains( idx ) ){
-		    user = util.fn.extend_obj( this.users.get( idx ), 
-					       users[idx] );
+	addUpdateBubbles : function( bubbles ){
+	    var idx, bubble;
+	    for( idx in bubbles ){
+		if( this.bubbles.contains( idx ) ){
+		    bubble = util.fn.extend_obj( this.bubbles.get( idx ), 
+					       bubbles[idx] );
 		}else{
-		    user = users[idx];
+		    bubble = bubbles[idx];
 		}
-		this.users.add( idx, user );
+		this.bubbles.add( idx, bubble );
 	    }
 	},
-	removeUsers : function( users ){
+	removeBubbles : function( bubbles ){
 	    var idx;
-	    for( idx in users ){
-		this.users.remove( idx );
+	    for( idx in bubbles ){
+		this.bubbles.remove( idx );
 	    }
 	},
 	updatePosition : function( base, selection, duration ){
-	    var users = base.selectAll(selection);
+	    var bubbles = base.selectAll(selection);
 	    if(this.force){
-		users.transition().duration(duration).attr( 'transform', function(d){ 
+		bubbles.transition().duration(duration).attr( 'transform', function(d){ 
 		    return "translate(" + d.x + "," + d.y + ")";
 		});
 	    }else{
-		users.transition().duration(duration).attr( 'transform', function(d){
+		bubbles.transition().duration(duration).attr( 'transform', function(d){
 		    return "translate(" + radius + "," + radius + ")";
 		});
 	    }
@@ -84,31 +84,31 @@
 	    var that = this,
 	    width = this.container.offsetWidth,
 	    height = this.container.offsetHeight,
-	    entries = this.users.getEntries(),
+	    entries = this.bubbles.getEntries(),
 	    num_nodes_across_radius = Math.sqrt(entries.length/Math.PI),
 	    charge = -Math.min(width, height) / num_nodes_across_radius,
-	    users = this.svg.selectAll(".user")
+	    bubbles = this.svg.selectAll(".bubble")
 		.data( entries, function(d){ return d.id; }),
 	    force = d3.layout.force()
 		.links( [] )
 		.nodes( entries )
 		.charge( charge )
 		.size([width,height])
-		.on("tick", function( e ){ that.updatePosition( that.svg, '.user', 0 ); })
+		.on("tick", function( e ){ that.updatePosition( that.svg, '.bubble', 0 ); })
 		.start();
 	    //  set initial state for each circle
 	    var old_drag = force
-	    users.enter()
+	    bubbles.enter()
 		.append('g')
-		.attr('class','user')
+		.attr('class','bubble')
 		.each( function( d, i ){
-		    var user = d3.select(this),
-		    path = user.append('path')
+		    var bubble = d3.select(this),
+		    path = bubble.append('path')
 			.attr('class','rating'),
-		    circle = user.append('circle')
+		    circle = bubble.append('circle')
 			.attr("r", radius)
 			.attr('class','info'),
-		    text = user.append('text')
+		    text = bubble.append('text')
 			.attr('text-anchor', 'middle')
 			.attr('dominant-baseline', 'middle')
 			.attr('class','info_text ')
@@ -117,24 +117,24 @@
 	            .call(force.drag);
 	    ;
 	    // transition the radius of each circle
-	    users
+	    bubbles
 		.transition().duration(200)
 		.each( function( d ){
-		    var user = d3.select(this),
-		    text = user.selectAll('text.info_text');
+		    var bubble = d3.select(this),
+		    text = bubble.selectAll('text.info_text');
 		    text.text(d.id+':'+d.rating);
-		    that.updateRating( user, 'path');
+		    that.updateRating( bubble, 'path');
 		    d.rating_init = d.rating;
 		});
 
 	    //  what happens when an element is removed
-	    users.exit()
+	    bubbles.exit()
 		.transition().duration(400)
 		.each( function( d ){
-		    var user = d3.select(this),
-		    text = user.selectAll('text.info_text'),
-		    path = user.selectAll('path'),
-		    circle = user.selectAll('circle');
+		    var bubble = d3.select(this),
+		    text = bubble.selectAll('text.info_text'),
+		    path = bubble.selectAll('path'),
+		    circle = bubble.selectAll('circle');
 		    text.transition().duration(100).style('font-size',0);
 		    circle.transition().duration(100).attr("r", 0);
 		    path.attr( "d", arc_line( 0 ) );
@@ -143,35 +143,35 @@
 	    ;
 
 	    //force
-	    users.on( 'click', function( d ){
+	    bubbles.on( 'click', function( d ){
 		that.force = !that.force;
 		if(that.force){
-		    that.notifyListeners('userUnSelected');
+		    that.notifyListeners('bubbleUnSelected');
 		    force.alpha(0.07);//force.resume();
 		}else{
-		    that.notifyListeners('userSelected');
+		    that.notifyListeners('bubbleSelected');
 		    force.stop();
 		}
-		users.each( function( user, i ){
-		    if( !that.force && d.id !== user.id ){
-			d3.select(this).attr('class','user hidden');
+		bubbles.each( function( bubble, i ){
+		    if( !that.force && d.id !== bubble.id ){
+			d3.select(this).attr('class','bubble hidden');
 		    }else{
-			d3.select(this).attr('class','user');
+			d3.select(this).attr('class','bubble');
 			that.updateRating( d3.select(this), '.rating');
 			d.x = d.rating;
 			d.y = d.rating;			
 		    }
 		});
-		that.updatePosition( that.svg, '.user', 100 );
+		that.updatePosition( that.svg, '.bubble', 100 );
 	    });
 
         }	    
     });
-    createUserMonitor = function(){
+    createBubbleMonitor = function(){
 	var monitor = new MonitorSet();
 	monitor.container.updateData = function( update, remove ){ 
-	    monitor.addUpdateUsers( update ); 
-	    monitor.removeUsers( remove );
+	    monitor.addUpdateBubbles( update ); 
+	    monitor.removeBubbles( remove );
 	    monitor.updateData();
 	}
 	monitor.container.addListener = function( id, listener ){
@@ -180,9 +180,9 @@
 	return monitor.container;
     }
     ;
-    if(util && !('createUserMonitor' in util) ){
-	util.createUserMonitor = createUserMonitor;
+    if(util && !('createBubbleMonitor' in util) ){
+	util.createBubbleMonitor = createBubbleMonitor;
     }else{
-	throw 'Could not add createUserMonitor';
+	throw 'Could not add createBubbleMonitor';
     }
 })( window, document, d3,  window.util );
