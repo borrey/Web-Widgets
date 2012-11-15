@@ -40,7 +40,7 @@
       undo = document.getElementById('undo'),
       redo = document.getElementById('redo');
       if( 'util' in window ){
-        var paint = window.util.images.createPaint( null, 200, 300 );
+        var paint = window.util.createPaint( null, 200, 300 );
         container.appendChild( paint );
         util.dom.addEvent(undo,'click',function(){ paint.undo()}, true);
         util.dom.addEvent(redo,'click',function(){ paint.redo()}, true);
