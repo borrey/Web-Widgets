@@ -6,7 +6,7 @@
 	    this.listeners = new util.objs.CountMap();
 
 	    this.container = document.createElement('div');
-	    util.style.addClassToElement(this.container,'slideout');
+	    util.style.addClassToElement(this.container,'slideout hidden');
 
 	    this.top = this.container.appendChild( document.createElement('div') );
 	    util.style.addClassToElement(this.top,'top');

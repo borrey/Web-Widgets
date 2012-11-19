@@ -1,0 +1,58 @@
+
+<!-- 
+
+        \file webcam.html
+  
+        \author borrey
+ 
+        Date Created: 2012-11-19T14:11:59-0700\n
+        Date Modified:
+ 
+        Copyright  All Rights Reserved  
+-->
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv='content-type' content='text/html;charset=utf-8' />
+    <title>Webcam</title>
+    <script src="../javascript/lib/swfobject.js"></script>
+    <script src="../javascript/util.js"></script>
+    <script src="../javascript/images.js"></script>
+    <script src="../javascript/webcam.js"></script>
+    <style type='text/css' media='screen'>
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Webcam</h1>
+    </header>
+    <article id='webcam'></article>
+    <a id='snapshot'>snapshot</a>
+    <a id='stream'>stream</a>
+    <article id='webcam_view'></article>
+    <a id='stream_view'>stream_view</a>
+    <footer></footer>
+  </body>
+  <script>
+    window.onload=function(){
+      var container = document.getElementById('container'),
+      snapshot = document.getElementById('snapshot'),
+      stream = document.getElementById('stream'),
+      stream_view = document.getElementById('stream_view'),
+      streamming = false, streaming_view = true,
+      webcam = util.createWebcam( '../flash/JSwebcam.swf' );
+      webcam.addListener('test',{
+       webcamMessage : function( data ){ console.log('got message:',data.args ); },
+       webcamReady : function( data ){ console.log('webcamReady:', data.args ); },
+       stream : function( data ){ console.log('stream, data:', data ); }
+      });
+      webcam.setupSWFObject('webcam');
+      var view_holder = document.getElementById('webcam_view').appendChild( webcam.createWebcam( ) );
+      
+      util.dom.addEvent(snapshot,'click',function(){ webcam.takesnapshot( function(data){ console.log('got snapshot:',data);}); }, true);
+      util.dom.addEvent(stream,'click',function(){ webcam.streamCamera( streamming ); streamming = !streamming;}, true);
+      util.dom.addEvent(stream_view,'click',function(){ webcam.startWebcam( view_holder.id, streaming_view ); streaming_view = !streaming_view;}, true);
+
+    }
+  </script>
+</html>
