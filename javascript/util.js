@@ -77,7 +77,7 @@
 		if(this.map[idx] && this.map[idx][callback_name]){
 		    this.map[idx][callback_name]( args );
 		}else{
-		    console.log('skipping', idx, this.map, this.map[idx]);
+		    //console.log('skipping', idx, this.map, this.map[idx]);
 		}
 	    }
 	},
@@ -418,7 +418,7 @@
 	    fn : {
 		generateId : generateId,
 		extend_obj : extend,
-		waitForTestToPass : waitForTestToPass,
+		waitForTestToPass : waitForTestToPass
 	    },
 	    cookies : {
 		set : setCookie,

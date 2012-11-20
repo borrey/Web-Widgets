@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<body>
+<script src="http://d3js.org/d3.v2.min.js?2.9.7"></script>
+<script src="../javascript/util.js"></script>
+<script src="../javascript/bubbles.js"></script>
+<script>
+  var 
+  categories = 10,
+  radius_range = [1, 12],
+  container = document.body.appendChild(util.createBubbleMonitor( radius_range, categories )),
+  data = {},
+  data_cnt = 0
+  ;
+  for( var idx = 0; 
+  idx < 200; idx ++){
+	var i = Math.floor(Math.random() * categories),
+	v = (i + 1) / categories * -Math.log(Math.random());
+	data_cnt++;
+	data [data_cnt] = {
+	  id : data_cnt,
+	  radius: v,
+	  color: i
+	}
+  }
+  
+  container.updateData( data, {});
+</script>
