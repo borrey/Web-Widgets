@@ -1,5 +1,22 @@
 <!DOCTYPE html>
-<meta charset="utf-8">
+<head>
+  <meta charset="utf-8">
+  <style type='text/css' media='screen'>
+    .bubbles {
+     position : relative;
+     width : 100%;
+     height : 100%;
+     overflow: auto;
+    }
+    .bubbles .bubble {
+     cursor: pointer;
+    }
+    .hidden {
+     display : none;
+    }
+   
+  </style>
+</head>
 <body>
 <script src="http://d3js.org/d3.v2.min.js?2.9.7"></script>
 <script src="../javascript/util.js"></script>
@@ -7,13 +24,14 @@
 <script>
   var 
   categories = 10,
-  radius_range = [1, 12],
+  radius_range = [10, 20],
   container = document.body.appendChild(util.createBubbleMonitor( radius_range, categories )),
   data = {},
-  data_cnt = 0
-  ;
+  data_cnt = 0,
+  current_hover = null;
+
   for( var idx = 0; 
-  idx < 200; idx ++){
+  idx < 5; idx ++){
 	var i = Math.floor(Math.random() * categories),
 	v = (i + 1) / categories * -Math.log(Math.random());
 	data_cnt++;
@@ -23,6 +41,49 @@
 	  color: i
 	}
   }
-  
+  container.addListener('test',{
+	bubbleSelected : function( data ){
+	  if(data.args.selected){
+            container.hide( function(candidate){ return candidate.id!==data.args.id; });
+	    d3.select(data.args.d3_obj).transition().duration(1000)
+	     .attr( 'transform', 'translate(50, 50)')
+	     .selectAll('circle').attr('r', 50);
+	  }else{
+	    d3.select(data.args.d3_obj)
+	    .transition().duration(1000).attr( 'transform', function(d){ return 'translate('+d.x+', '+d.y+')'; })
+	    .selectAll('circle').attr('r', function(d){ return container.radius( d.radius )});
+	    container.hide( function(candidate){ return false; });
+	  }
+	},
+	bubbleHovered : function( data ){
+	  current_hover = data.args.id;
+	  console.log('Mouse in', data.args.id ); 
+	},
+	bubbleUnHover : function( data ){
+	  if(current_hover === data.args.id ){
+	    console.log('Mouse Out', data.args.id );
+	    current_hover = null;
+	  }else{
+	    console.log('skip hover: ',data.args.id);
+	  }
+	}
+  });
   container.updateData( data, {});
+  //update
+  data = {};
+  for( var idx = 0; 
+  idx < 5; idx ++){
+	var i = Math.floor(Math.random() * categories),
+	v = (i + 1) / categories * -Math.log(Math.random());
+	data_cnt++;
+	data [data_cnt] = {
+	  id : data_cnt,
+	  radius: v,
+	  color: i
+	}
+   }
+   setTimeout( function(){ 	
+	container.updateData( data, { 3 : {} });
+   },10000);
+
 </script>
