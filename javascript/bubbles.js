@@ -1,7 +1,59 @@
 (function bubble( window, document, d3, util ){
     var margin = {top: 0, right: 0, bottom: 0, left: 0},
+    BubbleExtras = util.objs.Events.extend({
+	init : function( radius ){
+	    this.listeners = new util.objs.CountMap();
+	    this.radius = radius;
+	},
+	createPath : function( bubble ){
+	    path = bubble.append('path')
+		.attr('stroke-linecap','round')
+		.attr('class','rating');
+	},
+	createText : function( bubble ){
+	    text = bubble.append('text')
+		.attr("text-anchor", "middle")
+		.attr("dy", ".3em")
+		.text(function(d) { return d.text; })
+		.style("font-size", "5px")
+		.attr('class','bubbletext');
+	},
+	updatePath : function( path ){
+	    var that = this;
+	    path.transition().duration(200).attrTween( 
+		"d", function( a ){
+		    var i = d3.interpolate( a.radius_init || 0 , a.radius );
+		    a.radius_init = a.radius;
+		    return function(t) {
+			return that.arc_line( i(t) );
+		    }
+		}
+	    );
+	},
+	updateText : function( text, radius_override ){
+	    var that = this; 
+	    text.style("font-size", function(d) {
+		var radius = radius_override || that.radius(d.radius);
+		return (2 * radius) / d.text.length+'px'; 
+	    });
+	},
+	arc_line : function ( value ){
+	    var that = this,
+	    points = 100,
+	    domain = that.radius.domain(),
+	    radius = that.radius( value ),
+	    angle = d3.scale.linear()
+		.domain([0, points-1])
+		.range([0, (2 * Math.PI) * (value/ domain[ domain.length-1 ]) ]),
+	    line = d3.svg.line.radial().interpolate("basis")
+		.tension(0).radius(radius+radius/8).angle( function(d, i) { return angle(i); } );
+	    return line(d3.range(points));
+
+	}
+	
+    }),
     MonitorSet = util.objs.Events.extend({
-	init : function( radiuses, categories, svg ){
+	init : function( radiuses, categories, modes, svg ){
 	    var radius_range = radiuses || [10,10];
 	    color_range = 1; if( categories && categories.length ){ color_range = categories.length; }
 	    if(!svg){
@@ -16,7 +68,60 @@
 	    this.listeners = new util.objs.CountMap();
 	    this.radius = d3.scale.sqrt().range(radius_range);//array of two numbers min,max
 	    this.color = d3.scale.category10().domain(d3.range( color_range ));
-	    this.selected = false;
+	    this.extras = new BubbleExtras( this.radius );
+	    this.modes = util.fn.extend_obj({ 
+		cluster : {
+		    bubble_class : 'bubble',
+		    hide_test : function( candidate ){ return false },
+		    updateBubble : function( selected, tick, that ){
+			if(tick){
+			    selected.attr( 'transform', function(d){ 
+				return "translate("+ d.x  + "," + d.y + ")"; 
+			    });
+			}else{
+			    selected.transition().duration(1000).attr( 'transform', function(d){ 
+				return "translate("  + d.x  + ","  + d.y + ")";
+			    });
+			}
+		    }
+		},
+		progress : {
+		    bubble_class : 'bubble',
+		    hide_test : function( candidate ){ return false },
+		    updateBubble : function( selected, tick, that ){
+			var width = that.container.offsetWidth,
+			height = that.container.offsetHeight;
+			if(!tick){
+			    selected.transition().duration(1000)
+				.attr( 'transform', function(d){
+				    return 'translate('+ width * (d.progress||0)  + ',' + height *(1-d.grade ||0) + ')';
+				});
+			}
+		    }
+		},
+		selected : {
+		    bubble_class : 'bubble hidden',
+		    radius_override : 50,
+		    hide_test : function( candidate ){ return !candidate.selected; },
+		    updateBubble : function( candidate, tick, that ){
+			if(!tick){
+			    candidate.transition().duration(1000).attr( 'transform', function(d){ 
+				return 'translate('+ 50  + ',' + 50 + ')';
+			    });
+			}
+		    },
+		    updateCircle : function( candidate, that ){
+			candidate.attr('r', function( d ) { 
+			    return d.selected ? 50 : that.radius( d.radius );
+			})
+			.style('fill', function( d ) {
+			    return that.color( d.color );
+			});
+		    }
+		}
+	    }, modes );
+	    this.mode = 'progress';//cluster,selected
+	    this.previous_mode = null;
 	},
 	addUpdateBubbles : function( nodes ){
 	    var idx, bubble;
@@ -36,10 +141,31 @@
 		this.bubbles.remove( idx );
 	    }
 	},
+	updateCircle : function( circle ){
+	    var that = this,
+	    update_fn = this.modes[this.mode]['updateCircle'] || function( candidate ){
+		candidate.style('fill', function( d ) {
+		    return that.color( d.color );
+		}).attr('r', function( d ) {
+		    return that.radius( d.radius );
+		});
+	    };
+	    update_fn( circle, that );
+	},
+	updateBubble : function( bubble, tick ){
+	    var that = this,
+	    selected = bubble || that.svg.selectAll('.bubble'),
+	    update_fn = this.modes[this.mode]['updateBubble'];
+
+	    update_fn( selected, tick, that );
+	    that.hide();
+	    that.updateCircle( selected.selectAll('circle'));
+	    that.extras.updateText( selected.selectAll('.bubbletext'), this.modes[this.mode]['radius_override'])
+	},
 	updateData: function( ){
 	    var 
 	    that = this,
-	    bubble_class = that.selected ? 'bubble hidden' : 'bubble',//only for inserts
+	    bubble_class = that.modes[ that.mode ][ 'bubble_class' ],//only for inserts
 	    width = this.container.offsetWidth,
 	    height = this.container.offsetHeight,
 	    nodes = this.bubbles.getEntries(),	
@@ -60,24 +186,20 @@
 		  var bubble = d3.select(this),
 		  circle = bubble.append('circle')
 		      .attr('class','info');
-		  path = bubble.append('path')
-		      .attr('stroke', 'steelBlue')
-		      .attr('fill', 'none')
-		      .attr('stroke-width', 5 )
-		      .attr('stroke-linecap','round')
-		      .attr('class','rating');
+		  that.extras.createPath( bubble );
+		  that.extras.createText( bubble );
 	      })
 	      .call(force.drag);
 	    bubbles // update
 		.transition().duration(200)
 		.each( function( bubble_data ){
-		    var bubble = d3.select(this),
-		    circle = bubble.selectAll('circle')
-			.style("fill", function( d ) { return that.color(bubble_data.color); })
-			.attr('r', function( d ) { return d.selected ? d3.select(this).attr('r') : that.radius( bubble_data.radius ); });
-		    
+		    var bubble = d3.select(this);
+		    that.updateCircle( bubbles.selectAll('circle'), false );
+		    that.extras.updatePath( bubble.selectAll('path') );
+		    that.extras.updateText( bubble.selectAll('.bubbletext') );
 		});
-	    that.updatePath( bubbles.selectAll('path'));
+	    that.updateBubble( bubbles, false, that );
+
 	    bubbles.exit() // exit
 		.transition().duration(400)
 		.each( function( d ){
@@ -89,7 +211,6 @@
 	     bubbles
 		.on( 'click', function( d ){
 		    d.selected = !d.selected;
-		    that.selected = d.selected;
 		    that.notifyListeners('bubbleSelected',{ id: d.id, selected : d.selected, d3_obj : this });
 		})
 		.on('mouseover', function(d){
@@ -105,26 +226,22 @@
 		    that.notifyListeners('bubbleUnHover',{ id: d.id, data : d, d3_obj : this });
 		})
 	},
+	switchMode : function( mode, trigger ){
+	    console.log('switchMode:', mode, this.previous_mode );
+	    var next_mode = mode || this.previous_mode;
+	    this.previous_mode = this.mode;
+	    this.mode = next_mode;
+	    console.log('Hey switchMode:', this.mode, this.previous_mode );
+	    this.updateBubble( trigger );
+	},
 	tick : function( e ){
 	    var that = this,
 	    bubbles = 
 		that.svg
 		.selectAll(".bubble")
-		.each(that.cluster(10 * e.alpha * e.alpha))
-		.each(that.collide(.5))
-		    .attr( 'transform', function(d){ 
-			var offest = that.radius(d.radius),
-			x_offest =  d.x - offest,
-			y_offset = d.y - offest;
-			if(d.selected){
-			    //console.log(that.svg.select(this).attr('transform'));
-			    return d3.select(this).attr('transform');
-			}else{
-			    return "translate(" 
-				+ x_offest  + "," 
-				+ y_offset + ")"; 
-			}
-		    });
+		.each( that.cluster(10 * e.alpha * e.alpha) )
+		    .each(that.collide(.5));
+	    that.updateBubble( bubbles, true );
 	},
 	cluster : function(alpha){
 	    var that = this,
@@ -194,33 +311,8 @@
 		});
 	    };
 	},
-	updatePath : function( path ){
-	    var that = this;
-	    path.transition().duration(200).attrTween( 
-		"d", function( a ){
-		    var i = d3.interpolate( a.radius_init || 0 , a.radius );
-		    a.radius_init = a.radius;
-		    return function(t) {
-			return that.arc_line( i(t) );
-		    }
-		}
-	    );
-	},
-	arc_line : function ( value ){
-	    var that = this,
-	    points = 100,
-	    domain = that.radius.domain(),
-	    radius = that.radius( value ),
-	    angle = d3.scale.linear()
-		.domain([0, points-1])
-		.range([0, (2 * Math.PI) * (value/ domain[ domain.length-1 ]) ]),
-	    line = d3.svg.line.radial().interpolate("basis")
-		.tension(0).radius(radius+radius/8).angle( function(d, i) { return angle(i); } );
-	    return line(d3.range(points));
-
-	},
 	hide : function( hide_test_fn ){
-	    var hide_test = hide_test_fn || function(candidate){ return true; };
+	    var hide_test = hide_test_fn || this.modes[this.mode]['hide_test'] || function(candidate){ return true; };
 	    this.svg.selectAll(".bubble").each( function(bubble, i ){
 		if(hide_test(bubble)){
 		    d3.select(this).attr('class','bubble hidden');
@@ -230,24 +322,28 @@
 	    });
 	}
     }),
-    createBubbleMonitor = function( radius, categories, svg ){
-	var monitor = new MonitorSet( radius, categories, svg );
-	monitor.container.updateData = function( update, remove ){ 
-	    monitor.addUpdateBubbles( update ); 
-	    monitor.removeBubbles( remove );
-	    monitor.updateData();
-	};
-	monitor.redraw = function(){
-	    monitor.updateData();
-	};
-	monitor.container.addListener = function( id, listener ){
-	    monitor.addListener( id, listener );
-	};
-	monitor.container.radius = monitor.radius;
-	monitor.container.color = monitor.color;
-	monitor.container.hide = function( hide_test ){ monitor.hide(hide_test); };
-	monitor.container.getSvg = function(){ return monitor.svg; };
-	return monitor.container;
+    createBubbleMonitor = function( radius, categories, modes, svg ){
+	var monitor = new MonitorSet( radius, categories, modes, svg );
+	if(svg){
+	    return monitor;
+	}else{
+	    monitor.container.updateData = function( update, remove ){ 
+		monitor.addUpdateBubbles( update ); 
+		monitor.removeBubbles( remove );
+		monitor.updateData();
+	    };
+	    monitor.redraw = function(){
+		monitor.updateData();
+	    };
+	    monitor.container.addListener = function( id, listener ){
+		monitor.addListener( id, listener );
+	    };
+	    monitor.container.hide = function( hide_test ){ monitor.hide(hide_test); };
+	    monitor.container.getSvg = function(){ return monitor.svg; };
+	    monitor.container.updateBubble = function( bubble ){ monitor.updateBubble( bubble, false )};
+	    monitor.container.switchMode = function( mode, trigger ){ monitor.switchMode( mode, trigger );}
+	    return monitor.container;
+	}
     }
     ;
     if(util && !('createBubbleMonitor' in util) ){

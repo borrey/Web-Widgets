@@ -122,8 +122,10 @@
 	    }
 	},
 	updatePosition : function( e, base, selection, duration ){
+	    console.log(base);
 	    var that = this,
 	    bubbles = base.selectAll(selection);
+	    
 	    if(this.force){
 		bubbles.each(that.cluster(10 * e.alpha * e.alpha))
 		    .each(that.collide(0.5));

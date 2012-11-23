@@ -212,10 +212,12 @@
 	    }
 	    this.sizing = util.fn.extend_obj( { height : 1, width : 1, top : 0, left : 0 }, sizing );
 	    this.bullets = this.svg.append('g');
+	    this.bullets.attr('width',this.svg.offsetWidth);
 	    this.listeners = new util.objs.CountMap();
 	},
-	updateData : function( data_set ){
-	    var entries = d3.entries(data_set),
+	updateData : function( data_set, duration ){
+	    var that = this,
+	    entries = d3.entries(data_set),
 	    width = this.container.offsetWidth * this.sizing.width,
 	    height = this.container.offsetHeight * this.sizing.height,
 	    entry_height = height/entries.length,
@@ -243,13 +245,20 @@
 			.attr('dy', '1em')
 			.text(function(d) { return d.value.subtitle; })
 		    ;
+		}).on('click', function( d ){ 
+		    that.notifyListeners('bulletSelected',{ id: d.key, data : d.value, d3_obj : this });
 		});
 	    bars.select('.subtitle').each(function(d,i){ if( max_text < this.offsetWidth ){ max_text = this.offsetWidth }});
 	    bars.select('.title').each(function(d,i){ if( max_text < this.offsetWidth ){ max_text = this.offsetWidth }});
 	    max_text += 40;
-	    bars
-		.attr("transform", function(d,i){ return 'translate( '+ max_text +',' + i*entry_height + ')'})
-		.select('.chart').call( bullet( width - max_text - 40, (entry_height *5/6) - 20 ) );
+	    if(duration){
+		bars.attr("transform", function(d,i){ return 'translate( '+ max_text +',' + i*entry_height + ')'})
+		    .select('.chart').call( bullet( width - max_text - 40, (entry_height *5/6) - 20 ).duration(duration) );
+	    }else{
+		bars
+		    .attr("transform", function(d,i){ return 'translate( '+ max_text +',' + i*entry_height + ')'})
+		    .select('.chart').call( bullet( width - max_text - 40, (entry_height *5/6) - 20 ) );
+	    }
 
 	    bars.exit()
 		.remove()
@@ -257,7 +266,10 @@
     }),
     createBullets = function( svg, sizing ){
 	var bullets = new BulletsSet( svg, sizing );
-	bullets.container.updateData = function(data){ bullets.updateData(data); };
+	bullets.container.updateData = function(data, duration ){ bullets.updateData(data, duration ); };
+	bullets.container.addListener = function( id, listener ){
+	    bullets.addListener( id, listener );
+	};
 	return bullets.container;
     }
     ;
