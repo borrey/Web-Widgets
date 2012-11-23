@@ -207,8 +207,9 @@
 		;
 		
 	    }else{
-		this.container = svg;
+		this.container = svg.node();
 		this.svg = svg;
+		console.log('container: ', this.container);
 	    }
 	    this.sizing = util.fn.extend_obj( { height : 1, width : 1, top : 0, left : 0 }, sizing );
 	    this.bullets = this.svg.append('g');
@@ -224,9 +225,9 @@
 	    max_text = 0,
 	    bars = this.bullets.selectAll('.bullet')
 		.data( entries, function(d){ return d.key; });
-
 	    this.bullets.attr('transform', 'translate('+ this.container.offsetWidth*this.sizing.left  +',' 
 			       + this.container.offsetHeight* this.sizing.top + ")");
+	    console.log('bullet:',this,width,height);
 	    bars.enter()//create
 		.append('g')
 		.attr('class', 'bullet')
@@ -266,11 +267,15 @@
     }),
     createBullets = function( svg, sizing ){
 	var bullets = new BulletsSet( svg, sizing );
-	bullets.container.updateData = function(data, duration ){ bullets.updateData(data, duration ); };
-	bullets.container.addListener = function( id, listener ){
-	    bullets.addListener( id, listener );
-	};
-	return bullets.container;
+	if(svg){
+	    return bullets; 
+	}else{
+	    bullets.container.updateData = function(data, duration ){ bullets.updateData(data, duration ); };
+	    bullets.container.addListener = function( id, listener ){
+		bullets.addListener( id, listener );
+	    };
+	    return bullets.container;
+	}
     }
     ;
     if(util && !('createBullets' in util) ){

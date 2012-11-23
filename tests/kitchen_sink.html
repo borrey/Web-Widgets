@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <head>
   <meta charset="utf-8">
+  <link rel="stylesheet" href="../stylesheet/font-awesome.css">
   <style type='text/css' media='screen'>
     .bubbles {
      position : relative;
@@ -18,11 +19,66 @@
       fill : none;
       stroke-width : 5;
     }
+
+      .slideout {
+        position: fixed;
+        overflow : hidden;
+      }
+      .slideout.hidden {
+        display : block;
+        width : 0px;
+        min-width : 0px;
+      }
+      .slideout > .top{
+        position : absolute;
+        border : solid 1px;
+        width : 100%;
+        top : 0px;
+        height : 10%;
+      }
+      .slideout > .content{
+        position : absolute;
+        border : solid 1px;
+        width : 100%;
+        height : 90%;
+        overflow : auto;
+        bottom : 0px;
+      }
+      .slideout {
+        min-width : 500px;
+        width : 50%;
+        height : 50%;
+        right : 0px;
+        top : 0px;
+        border : solid 1px;
+      }
+
+
+      .bullet { font: 10px sans-serif; }
+      .bullet .marker { stroke: #000; stroke-width: 2px; }
+      .bullet .tick line { stroke: #666; stroke-width: .5px; }
+      .bullet .range.s0 { fill: red; }
+      .bullet .range.s1 { fill: orange; }
+      .bullet .range.s2 { fill: green; }
+      .bullet .measure.s0 { fill: lightsteelblue; }
+      .bullet .measure.s1 { fill: steelblue; }
+      .bullet .title { font-size: 14px; font-weight: bold; }
+      .bullet .subtitle { fill: #999; }
+
+
     .hidden {
      display : none;
     }
     a {
       margin : 5px;
+    }
+    a.close::before{
+      color:red;
+    }
+    a.close{
+      float : right;
+      cursor: pointer;
+      margin : 2.5px;
     }
   </style>
 </head>
@@ -35,18 +91,28 @@
 <script src="http://d3js.org/d3.v2.min.js?2.9.7"></script>
 <script src="../javascript/util.js"></script>
 <script src="../javascript/bubbles.js"></script>
+<script src="../javascript/bullets.js"></script>
+<script src="../javascript/slideout.js"></script>
 <script>
   var 
-  categories = 2,
+  categories = 5,
   radius_range = [10, 40],
   container = document.body.appendChild(util.createBubbleMonitor( radius_range, categories )),
+  tools = document.body.appendChild( window.util.createSlideout({ title : 'user info' }) ),
+  bullets = util.createBullets( container.getSvg(), { height : 0.5, width : 0.5, top : 0.5, left : 0.5 } ),
   data = {},
+  fake_data = {
+    evaluator_1 :{ "title":"Typing","subtitle":"Matching typing patterns","ranges":[150,225,300],"measures":[220,270],"markers":[250]},
+    evaluator_2 : { "title":"Order","subtitle":"Matching question ordering patterns","ranges":[20,25,30],"measures":[21,23],"markers":[26]},
+    evaluator_3 : { "title":"Proficiency","subtitle":"historic proficency","ranges":[350,500,600],"measures":[100,320],"markers":[550]},
+    evaluator_4 : { "title":"Speed","subtitle":"Metric using time per question","ranges":[1400,2000,2500],"measures":[1000,1650],"markers":[2100]}
+  },
   data_cnt = 0,
   current_hover = null
 ,
   random_string = function (){
     var text = "",
-    random_length = Math.floor(Math.random() * 10+1);
+    random_length = Math.floor(Math.random() * 5+5);
     possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
     for( var i=0; i < random_length; i++ )
@@ -58,8 +124,24 @@
   container.addListener('test',{
 	bubbleSelected : function( data ){
 	  var selected_obj = d3.select(data.args.d3_obj);
-          container.switchMode( data.args.selected ? 'selected': null,  
-		      data.args.selected ? selected_obj : null );
+          container.switchMode( 
+		      data.args.selected ? 'selected': null,  
+		      data.args.selected ? selected_obj : null 
+		      );
+	  tools.slide( data.args.selected );
+	  bullets.updateData( data.args.selected ? fake_data : {} );
+/*          if( data.args.selected ){
+	    setTimeout( function(){ 
+		if(data.args.selected){      
+		  fake_data['evaluator_2'] = {
+		      "title":"Order",
+		      "subtitle":"Matching question ordering patterns",
+		      "ranges":[20,25,30],"measures":[21,26],"markers":[22]
+		  };
+		  bullets.updateData( fake_data, 2000 );
+		}
+	    },2000);
+	  }*/
 	},
 	bubbleHovered : function( data ){
 	  current_hover = data.args.id;
@@ -77,11 +159,13 @@
   d3.selectAll("input").on("change", function change() {
 	if( this.name === 'mode' ){
 	  container.switchMode( this.value );
+          bullets.updateData( );
+	  tools.slide();
 	}
   });
 /********************/
   for( var idx = 0; 
-  idx < 50; idx ++){
+  idx < 40; idx ++){
 	var i = Math.floor(Math.random() * categories),
 	v = Math.random();//(i + 1) / categories * -Math.log(Math.random());
 	data_cnt++;
@@ -95,9 +179,7 @@
 	}
   }
   container.updateData( data, {});
-  //update
-  //data = {};
-   setTimeout( function(){
+  setTimeout( function(){
 	for( var idx = 0; idx < data_cnt; idx ++){
 	      var rand_progress = Math.random() * 0.5,
 	      new_value = (data[idx+1]['progress']+rand_progress), new_grade = data[idx+1]['grade']+rand_progress;
