@@ -4,56 +4,62 @@
   <style type='text/css' media='screen'>
     .bubbles {
      position : relative;
-     width : 100%;
-     height : 100%;
+     width : 90%;
+     height : 90%;
      overflow: auto;
+    }
+    .bubble .info {
     }
     .bubbles .bubble {
      cursor: pointer;
     }
+    .bubble .rating{
+      stroke : black;
+      fill : none;
+      stroke-width : 5;
+    }
     .hidden {
      display : none;
     }
-   
+    a {
+      margin : 5px;
+    }
   </style>
 </head>
 <body>
+  <form>
+    <input type="radio" name="mode" checked value="progress">Progress</input>
+    <input type="radio" name="mode" value="cluster">Cluster</input>
+</form>
+</body>
 <script src="http://d3js.org/d3.v2.min.js?2.9.7"></script>
 <script src="../javascript/util.js"></script>
 <script src="../javascript/bubbles.js"></script>
 <script>
   var 
-  categories = 10,
-  radius_range = [10, 20],
+  categories = 100,
+  radius_range = [10, 40],
   container = document.body.appendChild(util.createBubbleMonitor( radius_range, categories )),
   data = {},
   data_cnt = 0,
-  current_hover = null;
+  current_hover = null
+,
+  random_string = function (){
+    var text = "",
+    random_length = Math.floor(Math.random() * 10+1);
+    possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
-  for( var idx = 0; 
-  idx < 5; idx ++){
-	var i = Math.floor(Math.random() * categories),
-	v = (i + 1) / categories * -Math.log(Math.random());
-	data_cnt++;
-	data [data_cnt] = {
-	  id : data_cnt,
-	  radius: v,
-	  color: i
-	}
+    for( var i=0; i < random_length; i++ )
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+    return text;
   }
+;
   container.addListener('test',{
 	bubbleSelected : function( data ){
-	  if(data.args.selected){
-            container.hide( function(candidate){ return candidate.id!==data.args.id; });
-	    d3.select(data.args.d3_obj).transition().duration(1000)
-	     .attr( 'transform', 'translate(50, 50)')
-	     .selectAll('circle').attr('r', 50);
-	  }else{
-	    d3.select(data.args.d3_obj)
-	    .transition().duration(1000).attr( 'transform', function(d){ return 'translate('+d.x+', '+d.y+')'; })
-	    .selectAll('circle').attr('r', function(d){ return container.radius( d.radius )});
-	    container.hide( function(candidate){ return false; });
-	  }
+	  var selected_obj = d3.select(data.args.d3_obj);
+          container.switchMode( data.args.selected ? 'selected': null,  
+		      data.args.selected ? selected_obj : null );
 	},
 	bubbleHovered : function( data ){
 	  current_hover = data.args.id;
@@ -68,22 +74,58 @@
 	  }
 	}
   });
-  container.updateData( data, {});
-  //update
-  data = {};
+  d3.selectAll("input").on("change", function change() {
+	if( this.name === 'mode' ){
+	  container.switchMode( this.value );
+	}
+  });
+/********************/
   for( var idx = 0; 
-  idx < 5; idx ++){
+  idx < 50; idx ++){
 	var i = Math.floor(Math.random() * categories),
-	v = (i + 1) / categories * -Math.log(Math.random());
+	v = Math.random();//(i + 1) / categories * -Math.log(Math.random());
 	data_cnt++;
 	data [data_cnt] = {
 	  id : data_cnt,
 	  radius: v,
-	  color: i
+          text : random_string(),
+	  color: i,
+	  progress : Math.random(),
+	  grade : Math.random() * 0.5
+	}
+  }
+  container.updateData( data, {});
+  //update
+  //data = {};
+   setTimeout( function(){
+	for( var idx = 0; idx < data_cnt; idx ++){
+	      var rand_progress = Math.random() * 0.5,
+	      new_value = (data[idx+1]['progress']+rand_progress), new_grade = data[idx+1]['grade']+rand_progress;
+	      if( new_value <= 1 ){
+ 		data[idx+1]['progress'] = new_value;
+	      }
+              if( new_grade <=1 ){
+		data[idx+1]['grade'] = new_grade;
+	      }
+	 };
+	container.updateData( data, {});
+   },2000);
+   setTimeout( function(){ 	
+  for( var idx = 0; 
+  idx < 5; idx ++){
+	var i = Math.floor(Math.random() * categories),
+	v = Math.random(),
+	new_data = {};
+	data_cnt++;
+	new_data [data_cnt] = {
+	  id : data_cnt,
+	  text : random_string(),
+	  radius: v,
+	  color: i,
+	  progress : Math.random(),
+	  grade : Math.random() * 0.5
 	}
    }
-   setTimeout( function(){ 	
-	container.updateData( data, { 3 : {} });
-   },10000);
-
+	container.updateData( new_data, { 3 : {} });
+   },5000);
 </script>

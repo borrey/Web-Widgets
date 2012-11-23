@@ -31,9 +31,9 @@
       .bullet { font: 10px sans-serif; }
       .bullet .marker { stroke: #000; stroke-width: 2px; }
       .bullet .tick line { stroke: #666; stroke-width: .5px; }
-      .bullet .range.s0 { fill: #eee; }
-      .bullet .range.s1 { fill: #ddd; }
-      .bullet .range.s2 { fill: #ccc; }
+      .bullet .range.s0 { fill: red; }
+      .bullet .range.s1 { fill: orange; }
+      .bullet .range.s2 { fill: green; }
       .bullet .measure.s0 { fill: lightsteelblue; }
       .bullet .measure.s1 { fill: steelblue; }
       .bullet .title { font-size: 14px; font-weight: bold; }
@@ -53,17 +53,24 @@
   <script src="../javascript/bullets.js"></script>
   <script>
     var
-    container = document.body.appendChild(util.createBullets( null, { height : 0.5, width : 0.5 } )),
+    container = document.body.appendChild(util.createBullets( null, { height : 0.5, width : 0.5, left : 0.5 } )),
     data = {
      evaluator_1 :{"title":"Typing","subtitle":"Matching typing patterns","ranges":[150,225,300],"measures":[220,270],"markers":[250]},
     evaluator_2 : {"title":"Order","subtitle":"Matching question ordering patterns","ranges":[20,25,30],"measures":[21,23],"markers":[26]},
      evaluator_3 : {"title":"Proficiency","subtitle":"historic proficency","ranges":[350,500,600],"measures":[100,320],"markers":[550]},
      evaluator_4 : {"title":"Speed","subtitle":"Metric using time per question","ranges":[1400,2000,2500],"measures":[1000,1650],"markers":[2100]}
     };
+
+    container.addListener('test',{
+      bulletSelected : function( data ){
+        console.log('bullet selected',data);
+      }
+    });
     container.updateData(data);
     setTimeout( function(){ 
-      delete data['evaluator_1'];
-      container.updateData( data );
-    },10000);
+      //delete data['evaluator_1'];
+      data['evaluator_2'] = {"title":"Order","subtitle":"Matching question ordering patterns","ranges":[20,25,30],"measures":[21,26],"markers":[22]};
+      container.updateData( data, 2000 );
+    },2000);
   </script>
 </html>

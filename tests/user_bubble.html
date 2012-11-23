@@ -22,6 +22,9 @@
     <style type='text/css' media='screen'>
       .bubbles {
         position : relative;
+        width : 100%;
+        height : 100%;
+        overflow: auto;
       }
       a.close::before{
         color:red;
@@ -32,11 +35,13 @@
         margin : 2.5px;
       }
       .slideout {
-        position : absolute;
+        position: fixed;
         overflow : hidden;
       }
-      .hidden {
+      .slideout.hidden {
+        display : block;
         width : 0px;
+        min-width : 0px;
       }
       .slideout > .top{
         position : absolute;
@@ -53,8 +58,8 @@
         overflow : auto;
         bottom : 0px;
       }
-      .bubbles .slideout {
-        
+      .slideout {
+        min-width : 500px;
         width : 50%;
         height : 50%;
         right : 0px;
@@ -72,9 +77,8 @@
       .bubbles .bubble .rating{
         fill : none;
         stroke : steelblue;
-        stroke-width : 5px;
       } 
-      .bubbles .hidden {
+      .hidden {
         display : none;
       }
     </style>
@@ -91,7 +95,7 @@
       ;
       if( 'util' in window ){
         var monitor = window.util.createBubbleMonitor( ),
-        tools = monitor.appendChild(window.util.createSlideout()),
+        tools = document.body.appendChild(window.util.createSlideout({ title : 'user info' })),
         data = {
           35 : { id : 35, rating : 45 },
           45 : { id : 45, rating : 35 }
