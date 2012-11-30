@@ -206,8 +206,10 @@
 		    var bubble = d3.select(this),
 		    circle = bubble.selectAll('circle')
 			.transition().duration(100).attr("r", 0);
-		})
-		    .remove();
+		    that.notifyListeners('BubbleRemoved',{ id : d.id, selected : d.selected, d3_obj : this });
+		}).remove().call(function( d ){
+		    console.log('removed: ',d);
+		});
 	     bubbles
 		.on( 'click', function( d ){
 		    d.selected = !d.selected;
@@ -231,7 +233,6 @@
 	    var next_mode = mode || this.previous_mode;
 	    this.previous_mode = this.mode;
 	    this.mode = next_mode;
-	    console.log('Hey switchMode:', this.mode, this.previous_mode );
 	    this.updateBubble( trigger );
 	},
 	tick : function( e ){

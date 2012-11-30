@@ -5,8 +5,9 @@
   <style type='text/css' media='screen'>
     .bubbles {
      position : relative;
+     top : 10px;
+     bottom : 0px;
      width : 90%;
-     height : 90%;
      overflow: auto;
     }
     .bubble .info {
@@ -23,6 +24,13 @@
       .slideout {
         position: fixed;
         overflow : hidden;
+        resize:both;
+        min-width : 500px;
+        width : 50%;
+        height : 50%;
+        right : 10px;
+        top : 0px;
+        border : solid 1px;
       }
       .slideout.hidden {
         display : block;
@@ -44,15 +52,6 @@
         overflow : auto;
         bottom : 0px;
       }
-      .slideout {
-        min-width : 500px;
-        width : 50%;
-        height : 50%;
-        right : 0px;
-        top : 0px;
-        border : solid 1px;
-      }
-
 
       .bullet { font: 10px sans-serif; }
       .bullet .marker { stroke: #000; stroke-width: 2px; }
@@ -99,7 +98,7 @@
   radius_range = [10, 40],
   container = document.body.appendChild(util.createBubbleMonitor( radius_range, categories )),
   tools = document.body.appendChild( window.util.createSlideout({ title : 'user info' }) ),
-  bullets = util.createBullets( container.getSvg(), { height : 0.5, width : 0.5, top : 0.5, left : 0.5 } ),
+  bullets = util.createBullets( container.getSvg(), { height : 0.5, width : 0.5, top : 0.5 } ),
   data = {},
   fake_data = {
     evaluator_1 :{ "title":"Typing","subtitle":"Matching typing patterns","ranges":[150,225,300],"measures":[220,270],"markers":[250]},
@@ -112,7 +111,7 @@
 ,
   random_string = function (){
     var text = "",
-    random_length = Math.floor(Math.random() * 5+5);
+    random_length = Math.floor(Math.random() * 10+5);
     possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
     for( var i=0; i < random_length; i++ )
@@ -141,7 +140,16 @@
 		  bullets.updateData( fake_data, 2000 );
 		}
 	    },2000);
-	  }*/
+	  }
+*/
+	},
+	BubbleRemoved : function( removed ){
+           console.log('Removed',removed.args);
+	   if( removed.args.selected ){
+  	     tools.slide( false );
+	     bullets.updateData({});
+	     //container.switchMode();
+	   }
 	},
 	bubbleHovered : function( data ){
 	  current_hover = data.args.id;
@@ -165,7 +173,7 @@
   });
 /********************/
   for( var idx = 0; 
-  idx < 40; idx ++){
+  idx < 20; idx ++){
 	var i = Math.floor(Math.random() * categories),
 	v = Math.random();//(i + 1) / categories * -Math.log(Math.random());
 	data_cnt++;
@@ -208,6 +216,6 @@
 	  grade : Math.random() * 0.5
 	}
    }
-	container.updateData( new_data, { 3 : {} });
+	container.updateData( new_data, { 1 : {} });
    },5000);
 </script>
