@@ -148,7 +148,6 @@
 	    }
 	},
 	streamPick : function(){
-	    console.log('stream');
 	    this.takesnapshot( function( data ){
 		that.notifyListeners('stream', data );
 	    });
