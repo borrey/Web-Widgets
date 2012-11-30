@@ -22,6 +22,7 @@
 	    this.webcam_canvas = new util.createImageCanvas( true );
 	    this.movie_obj = null;
 	    this.movie_stream = null;
+	    this.view_stream = null;
 	    this.have_image = false;
 	    this.canvases = new util.objs.CountMap();
 	    this.active_canvases_cnt = 0;
@@ -60,13 +61,13 @@
 		    }
 		    if( that.active_canvases_cnt <= 0 ){//TODO should add itself webcam.streamCamera as a queue
 			that.active_canvases_cnt = 0;
-			if( that.movie_stream ){
-			    clearInterval( that.movie_stream );
-			    that.movie_stream = false;
+			if( that.view_stream ){
+			    clearInterval( that.view_stream );
+			    that.view_stream = false;
 			}
 		    }else{
- 			if(!that.movie_stream){
-			    that.movie_stream = setInterval( function(){ that.takesnapshot( function( data ){
+ 			if(!that.view_stream){
+			    that.view_stream = setInterval( function(){ that.takesnapshot( function( data ){
 				that.canvases.callEach('callback',{ image : data });
 			    }) }, 300 );
 			}
@@ -148,7 +149,6 @@
 	    }
 	},
 	streamPick : function(){
-	    console.log('stream');
 	    this.takesnapshot( function( data ){
 		that.notifyListeners('stream', data );
 	    });

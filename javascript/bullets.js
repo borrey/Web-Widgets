@@ -19,7 +19,7 @@
 	    return "translate(" + x(d) + ",0)";
 	};
     }
-    var bullet = function( width, height ) {
+    var bullet = function( width, height, zero ) {
 	var orient = "left",
 	reverse = false,
 	duration = 0,
@@ -42,7 +42,7 @@
 		    .domain([0, Infinity])
 		    .range(x1.range()),
 		w0 = bulletWidth(x0),// Derive width-scales from the x-scales.
-		w1 = bulletWidth(x1),
+		w1 = zero ? 0 : bulletWidth(x1),
 		range = g.selectAll("rect.range") 
 		    .data(rangez),
 		measure = g.selectAll("rect.measure")
@@ -207,27 +207,26 @@
 		;
 		
 	    }else{
-		this.container = svg.node();
+		this.container = svg.node().parentNode;
 		this.svg = svg;
-		console.log('container: ', this.container);
 	    }
-	    this.sizing = util.fn.extend_obj( { height : 1, width : 1, top : 0, left : 0 }, sizing );
+	    this.sizing = util.fn.extend_obj( { height : 1, width : 1, top : 0, left : 0, text_left : false }, sizing );
 	    this.bullets = this.svg.append('g');
-	    this.bullets.attr('width',this.svg.offsetWidth);
+	    //this.bullets.attr('width',this.svg.offsetWidth);
 	    this.listeners = new util.objs.CountMap();
 	},
 	updateData : function( data_set, duration ){
 	    var that = this,
 	    entries = d3.entries(data_set),
-	    width = this.container.offsetWidth * this.sizing.width,
-	    height = this.container.offsetHeight * this.sizing.height,
+	    width = (this.container.offsetWidth ) * this.sizing.width,
+	    height = (this.container.offsetHeight ) * this.sizing.height,
 	    entry_height = height/entries.length,
 	    max_text = 0,
 	    bars = this.bullets.selectAll('.bullet')
 		.data( entries, function(d){ return d.key; });
 	    this.bullets.attr('transform', 'translate('+ this.container.offsetWidth*this.sizing.left  +',' 
 			       + this.container.offsetHeight* this.sizing.top + ")");
-	    console.log('bullet:',this,width,height);
+	    console.log('bullet:',this.container,width,height);
 	    bars.enter()//create
 		.append('g')
 		.attr('class', 'bullet')
@@ -236,10 +235,9 @@
 		    chart = bullet.append("g")
 			.attr('class', 'chart'),
 		    title = bullet.append("g")
-			.style("text-anchor", "end")
-			.attr("transform", "translate(-6," + entry_height / 2 + ")"),
+			.attr('class', 'title'),
 		    main_title = title.append("text")
-			.attr('class', 'title')
+			.attr('class', 'maintitle')
 			.text(function(d) { return d.value.title; }),
 		    sub_title= title.append("text")
 			.attr('class', 'subtitle')
@@ -250,15 +248,16 @@
 		    that.notifyListeners('bulletSelected',{ id: d.key, data : d.value, d3_obj : this });
 		});
 	    bars.select('.subtitle').each(function(d,i){ if( max_text < this.offsetWidth ){ max_text = this.offsetWidth }});
-	    bars.select('.title').each(function(d,i){ if( max_text < this.offsetWidth ){ max_text = this.offsetWidth }});
-	    max_text += 40;
-	    if(duration){
-		bars.attr("transform", function(d,i){ return 'translate( '+ max_text +',' + i*entry_height + ')'})
-		    .select('.chart').call( bullet( width - max_text - 40, (entry_height *5/6) - 20 ).duration(duration) );
+	    bars.select('.maintitle').each(function(d,i){ if( max_text < this.offsetWidth ){ max_text = this.offsetWidth }});
+	    if(this.sizing.text_left){
+		bars.attr("transform", function(d,i){ return 'translate( '+ max_text +',' + i*entry_height + ')'});		
+		bars.select('.chart').call( bullet( width - max_text - 40, (entry_height *5/6) - 20 ).duration(duration || 0) );
+		bars.select('.title').attr("transform", "translate(-6," + entry_height / 2 + ")").style("text-anchor", "end");
 	    }else{
-		bars
-		    .attr("transform", function(d,i){ return 'translate( '+ max_text +',' + i*entry_height + ')'})
-		    .select('.chart').call( bullet( width - max_text - 40, (entry_height *5/6) - 20 ) );
+		max_text += 40;
+		bars.attr("transform", function(d,i){ return 'translate( '+ 10 +',' + i*entry_height + ')'});
+		bars.select('.chart').call( bullet( width - max_text, (entry_height *5/6) - 20 ).duration(duration || 0) );
+		bars.select('.title').attr("transform", "translate("+ (  width - max_text + 10 ) +"," + (entry_height * 5/6 -20) / 2 + ")").style("text-anchor", "start");
 	    }
 
 	    bars.exit()
