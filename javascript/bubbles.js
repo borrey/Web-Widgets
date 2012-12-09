@@ -54,7 +54,8 @@
     }),
     MonitorSet = util.objs.Events.extend({
 	init : function( radiuses, categories, modes, svg ){
-	    var radius_range = radiuses || [10,10];
+	    var that = this,
+	    radius_range = radiuses || [10,10];
 	    color_range = 1; if( categories && categories.length ){ color_range = categories.length; }
 	    if(!svg){
 		this.container = document.createElement('div');
@@ -69,6 +70,7 @@
 	    this.radius = d3.scale.sqrt().range(radius_range);//array of two numbers min,max
 	    this.color = d3.scale.category10().domain(d3.range( color_range ));
 	    this.extras = new BubbleExtras( this.radius );
+	    this.filter = {};
 	    this.modes = util.fn.extend_obj({ 
 		cluster : {
 		    bubble_class : 'bubble',
@@ -115,8 +117,34 @@
 			    return d.selected ? 50 : that.radius( d.radius );
 			})
 			.style('fill', function( d ) {
-			    return that.color( d.color );
+			    return that.color( d.group );
 			});
+		    }
+		},
+		filter : {
+		    bubble_class : 'bubble hidden',
+		    hide_test : function( candidate ){ 
+			if( that.filter 
+			    && 'category' in that.filter 
+			    && 'id' in that.filter ){
+			    console.log( 'test:',that.filter );
+			    return !(that.filter.id in candidate[that.filter.category]);
+			}else{
+			    console.log( 'skip:',that.filter );
+			    return false;
+			}
+			
+		    },
+		    updateBubble : function( selected, tick, that ){
+			if(tick){
+			    selected.attr( 'transform', function(d){ 
+				return "translate("+ d.x  + "," + d.y + ")"; 
+			    });
+			}else{
+			    selected.transition().duration(1000).attr( 'transform', function(d){ 
+				return "translate("  + d.x  + ","  + d.y + ")";
+			    });
+			}
 		    }
 		}
 	    }, modes );
@@ -145,7 +173,7 @@
 	    var that = this,
 	    update_fn = this.modes[this.mode]['updateCircle'] || function( candidate ){
 		candidate.style('fill', function( d ) {
-		    return that.color( d.color );
+		    return that.color( d.group );
 		}).attr('r', function( d ) {
 		    return that.radius( d.radius );
 		});
@@ -180,16 +208,16 @@
 		.start();
 	    this.svg.attr("width", width).attr("height", height);
 	    bubbles.enter()//create
-	      .append('g')
-	      .attr('class', bubble_class)
-	      .each( function( d, i ){
-		  var bubble = d3.select(this),
-		  circle = bubble.append('circle')
-		      .attr('class','info');
-		  that.extras.createPath( bubble );
-		  that.extras.createText( bubble );
-	      })
-	      .call(force.drag);
+		.append('g')
+		.attr('class', bubble_class)
+		.each( function( d, i ){
+		    var bubble = d3.select(this),
+		    circle = bubble.append('circle')
+			.attr('class','info');
+		    that.extras.createPath( bubble );
+		    that.extras.createText( bubble );
+		})
+		    .call(force.drag);
 	    bubbles // update
 		.transition().duration(200)
 		.each( function( bubble_data ){
@@ -208,9 +236,8 @@
 			.transition().duration(100).attr("r", 0);
 		    that.notifyListeners('BubbleRemoved',{ id : d.id, selected : d.selected, d3_obj : this });
 		}).remove().call(function( d ){
-		    console.log('removed: ',d);
 		});
-	     bubbles
+	    bubbles
 		.on( 'click', function( d ){
 		    d.selected = !d.selected;
 		    that.notifyListeners('bubbleSelected',{ id: d.id, selected : d.selected, d3_obj : this });
@@ -228,9 +255,17 @@
 		    that.notifyListeners('bubbleUnHover',{ id: d.id, data : d, d3_obj : this });
 		})
 	},
+	setupFilters : function( filter ){
+	    if( 'value' in filter ){
+		this.switchMode('filter', null );
+		this.filter = filter;
+		console.log('filter: ',filter);
+	    }else{
+		this.switchMode(null, null );
+	    }
+	},
 	switchMode : function( mode, trigger ){
-	    console.log('switchMode:', mode, this.previous_mode );
-	    var next_mode = mode || this.previous_mode;
+	    var next_mode = mode || this.previous_mode || 'progress';
 	    this.previous_mode = this.mode;
 	    this.mode = next_mode;
 	    this.updateBubble( trigger );
@@ -254,14 +289,14 @@
 	    height = 500 - margin.top - margin.bottom;
 
 	    nodes.forEach(function(d) {
-		if (!(d.color in max) || (d.radius > max[d.color].radius)) {
-		    max[d.color] = d;
+		if (!(d.group in max) || (d.radius > max[d.group].radius)) {
+		    max[d.group] = d;
 		}
 	    });
 	    return function(d) {
-		var node = max[d.color] || d,
+		var node = max[d.group] || d,
 		l, r, x, y, k = 1, i = -1;
-		max[d.color] = max[d.color] || d;
+		max[d.group] = max[d.group] || d;
 		// For cluster nodes, apply custom gravity.
 		if (node == d) {
 		    node = {x: width / 2, y: height / 2, radius: -d.radius};
@@ -296,7 +331,7 @@
 			var x = d.x - quad.point.x,
 			y = d.y - quad.point.y,
 			l = Math.sqrt(x * x + y * y),
-			r = that.radius(d.radius) + that.radius(quad.point.radius) + (that.color(d.color) !== that.color(quad.point.color)) * padding;
+			r = that.radius(d.radius) + that.radius(quad.point.radius) + (that.color(d.group) !== that.color(quad.point.group)) * padding;
 			if (l < r) {
 			    l = (l - r) / l * alpha;
 			    d.x -= x *= l;
@@ -328,12 +363,13 @@
 	if(svg){
 	    return monitor;
 	}else{
-	    monitor.container.updateData = function( update, remove ){ 
+	    monitor.container.updateData = function( update, remove, filter ){ 
+		monitor.setupFilters( filter );
 		monitor.addUpdateBubbles( update ); 
 		monitor.removeBubbles( remove );
 		monitor.updateData();
 	    };
-	    monitor.redraw = function(){
+	    monitor.container.redraw = function(){
 		monitor.updateData();
 	    };
 	    monitor.container.addListener = function( id, listener ){
