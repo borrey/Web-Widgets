@@ -226,7 +226,6 @@
 		.data( entries, function(d){ return d.key; });
 	    this.bullets.attr('transform', 'translate('+ this.container.offsetWidth*this.sizing.left  +',' 
 			       + this.container.offsetHeight* this.sizing.top + ")");
-	    console.log('bullet:',this.container,width,height);
 	    bars.enter()//create
 		.append('g')
 		.attr('class', 'bullet')
