@@ -20,7 +20,7 @@
 	},
 	updatePath : function( path ){
 	    var that = this;
-	    path.transition().duration(200).attrTween( 
+	    path.selectAll('path').transition().duration(200).attrTween( 
 		"d", function( a ){
 		    var i = d3.interpolate( a.radius_init || 0 , a.radius );
 		    a.radius_init = a.radius;
@@ -32,7 +32,7 @@
 	},
 	updateText : function( text, radius_override ){
 	    var that = this; 
-	    text.style("font-size", function(d) {
+	    text.selectAll('.bubbletext').style("font-size", function(d) {
 		var radius = radius_override || that.radius(d.radius);
 		return (2 * radius) / d.text.length+'px'; 
 	    });
@@ -74,6 +74,10 @@
 	    this.modes = util.fn.extend_obj({ 
 		cluster : {
 		    bubble_class : 'bubble',
+		    setupMode : function( trigger ){ 
+			console.log('Hey cluster:', trigger);
+			that.filter = {};
+		    },
 		    hide_test : function( candidate ){ return false },
 		    updateBubble : function( selected, tick, that ){
 			if(tick){
@@ -89,6 +93,9 @@
 		},
 		progress : {
 		    bubble_class : 'bubble',
+		    setupMode : function( trigger ){ 
+			that.filter = {};
+		    },
 		    hide_test : function( candidate ){ return false },
 		    updateBubble : function( selected, tick, that ){
 			var width = that.container.offsetWidth,
@@ -103,6 +110,9 @@
 		},
 		selected : {
 		    bubble_class : 'bubble hidden',
+		    setupMode : function( trigger ){ 
+			console.log('Hey selected:', trigger);
+		    },
 		    radius_override : 50,
 		    hide_test : function( candidate ){ return !candidate.selected; },
 		    updateBubble : function( candidate, tick, that ){
@@ -113,7 +123,7 @@
 			}
 		    },
 		    updateCircle : function( candidate, that ){
-			candidate.attr('r', function( d ) { 
+			candidate.selectAll('circle').attr('r', function( d ) { 
 			    return d.selected ? 50 : that.radius( d.radius );
 			})
 			.style('fill', function( d ) {
@@ -121,30 +131,75 @@
 			});
 		    }
 		},
-		filter : {
+		cluster_filter : {
 		    bubble_class : 'bubble hidden',
+		    setupMode : function( trigger ){ 
+			console.log('Hey cluster_filter:', trigger);
+			that.filter = trigger;	
+		    },
 		    hide_test : function( candidate ){ 
 			if( that.filter 
 			    && 'category' in that.filter 
 			    && 'id' in that.filter ){
-			    console.log( 'test:',that.filter );
 			    return !(that.filter.id in candidate[that.filter.category]);
 			}else{
-			    console.log( 'skip:',that.filter );
 			    return false;
 			}
 			
 		    },
 		    updateBubble : function( selected, tick, that ){
 			if(tick){
-			    selected.attr( 'transform', function(d){ 
+			    that.svg.selectAll('.bubble').attr( 'transform', function(d){ 
 				return "translate("+ d.x  + "," + d.y + ")"; 
 			    });
 			}else{
-			    selected.transition().duration(1000).attr( 'transform', function(d){ 
+			    that.svg.selectAll('.bubble').transition().duration(1000).attr( 'transform', function(d){ 
 				return "translate("  + d.x  + ","  + d.y + ")";
 			    });
 			}
+		    },
+		    updateCircle : function( circle ){
+			that.svg.selectAll('.bubble').selectAll('circle').attr('r', function( d ) { 
+			    return d.selected ? 50 : that.radius( d.radius );
+			})
+			.style('fill', function( d ) {
+			    return that.color( d.group );
+			});
+		    }
+		},
+		progress_filter : {
+		    bubble_class : 'bubble hidden',
+		    setupMode : function( trigger ){ 
+			that.filter = trigger;
+		    },
+		    hide_test : function( candidate ){ 
+			if( that.filter 
+			    && 'category' in that.filter 
+			    && 'id' in that.filter ){
+			    console.log( 'Bubbles:', that.filter.id, candidate, that.filter.category)
+			    return !(that.filter.id in candidate[that.filter.category]);
+			}else{
+			    return false;
+			}
+			
+		    },
+		    updateBubble : function( selected, tick, that ){
+			var width = that.container.offsetWidth,
+			height = that.container.offsetHeight;
+			if(!tick){
+			    that.svg.selectAll('.bubble').transition().duration(1000)
+				.attr( 'transform', function(d){
+				    return 'translate('+ width * (d.progress||0)  + ',' + height *(1-d.grade ||0) + ')';
+				});
+			}
+		    },
+		    updateCircle : function( circle ){
+			that.svg.selectAll('.bubble').selectAll('circle').attr('r', function( d ) { 
+			    return d.selected ? 50 : that.radius( d.radius );
+			})
+			.style('fill', function( d ) {
+			    return that.color( d.group );
+			});
 		    }
 		}
 	    }, modes );
@@ -155,8 +210,7 @@
 	    var idx, bubble;
 	    for( idx in nodes ){
 		if( this.bubbles.contains( idx ) ){
-		    bubble = util.fn.extend_obj( this.bubbles.get( idx ), 
-						 nodes[idx] );
+		    bubble = util.fn.extend_obj( this.bubbles.get( idx ), nodes[idx] );
 		}else{
 		    bubble = nodes[idx];
 		}
@@ -172,13 +226,17 @@
 	updateCircle : function( circle ){
 	    var that = this,
 	    update_fn = this.modes[this.mode]['updateCircle'] || function( candidate ){
-		candidate.style('fill', function( d ) {
+		candidate.selectAll('circle').style('fill', function( d ) {
 		    return that.color( d.group );
 		}).attr('r', function( d ) {
 		    return that.radius( d.radius );
 		});
 	    };
 	    update_fn( circle, that );
+	},
+	setupMode : function( trigger ){
+	    var update_fn = this.modes[this.mode]['setupMode'];
+	    update_fn( trigger );
 	},
 	updateBubble : function( bubble, tick ){
 	    var that = this,
@@ -187,8 +245,8 @@
 
 	    update_fn( selected, tick, that );
 	    that.hide();
-	    that.updateCircle( selected.selectAll('circle'));
-	    that.extras.updateText( selected.selectAll('.bubbletext'), this.modes[this.mode]['radius_override'])
+	    //that.updateCircle( selected );
+	    //that.extras.updateText( selected, this.modes[this.mode]['radius_override'])
 	},
 	updateData: function( ){
 	    var 
@@ -222,9 +280,9 @@
 		.transition().duration(200)
 		.each( function( bubble_data ){
 		    var bubble = d3.select(this);
-		    that.updateCircle( bubbles.selectAll('circle'), false );
-		    that.extras.updatePath( bubble.selectAll('path') );
-		    that.extras.updateText( bubble.selectAll('.bubbletext') );
+		    that.updateCircle( bubbles, false );
+		    that.extras.updatePath( bubble );
+		    that.extras.updateText( bubble );
 		});
 	    that.updateBubble( bubbles, false, that );
 
@@ -255,19 +313,11 @@
 		    that.notifyListeners('bubbleUnHover',{ id: d.id, data : d, d3_obj : this });
 		})
 	},
-	setupFilters : function( filter ){
-	    if( 'value' in filter ){
-		this.switchMode('filter', null );
-		this.filter = filter;
-		console.log('filter: ',filter);
-	    }else{
-		this.switchMode(null, null );
-	    }
-	},
 	switchMode : function( mode, trigger ){
 	    var next_mode = mode || this.previous_mode || 'progress';
 	    this.previous_mode = this.mode;
 	    this.mode = next_mode;
+	    this.setupMode( trigger );
 	    this.updateBubble( trigger );
 	},
 	tick : function( e ){
@@ -364,7 +414,7 @@
 	    return monitor;
 	}else{
 	    monitor.container.updateData = function( update, remove, filter ){ 
-		monitor.setupFilters( filter );
+		//monitor.setupFilters( filter );
 		monitor.addUpdateBubbles( update ); 
 		monitor.removeBubbles( remove );
 		monitor.updateData();
