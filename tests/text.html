@@ -1,0 +1,47 @@
+<!-- 
+     \file text.html
+     \author borrey
+     Date Created: 2012-12-05T10:25:29-0700\n
+     Date Modified:
+     Copyright  All Rights Reserved  
+-->
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv='content-type' content='text/html;charset=utf-8' />
+    <title>Title</title>
+    <style type='text/css' media='screen'>
+      #cursor {
+       height : 1em;
+       border: 1px solid green;
+       position : relative;
+      }
+      #cursor > form{
+       position : absolute;
+       top : 100%;
+       padding : 5px;
+       border : solid 1px;
+      }      
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Text </h1>
+    </header>
+    <article id="editor" >
+    </article>
+    <footer></footer>
+  </body>
+  <script src="../javascript/util.js"></script>
+  <script src="../javascript/editor.js"></script>
+  <script>
+    window.onload = function(){
+      var container 
+        = document.getElementById('editor'),
+      editor = new util.objs.TextEditor( container );
+      paragraph = editor.createView( null, null, 'paragraph', {} );
+      text = editor.createView( paragraph, null, 'text', { text : ''});
+      console.log(paragraph);
+    }
+  </script>
+</html>
